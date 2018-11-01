@@ -50,3 +50,7 @@ class BaseTestCase(TestCase):
 
         with open(filename, 'w') as f:
             f.write(data)
+
+    @classmethod
+    def _media_remove(cls, filename):
+        os.remove(filename)

@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.validators import EMPTY_VALUES
 
 from .remove import remove_media
-from .utils import append_if_not_exists, get_file_fields
+from .utils import get_file_fields
 
 
 def get_used_media():
@@ -16,7 +16,7 @@ def get_used_media():
         Get media which are still used in models
     """
 
-    media = []
+    media = set()
 
     for field in get_file_fields():
         is_null = {
@@ -32,12 +32,12 @@ def get_used_media():
                 .values_list(field.name, flat=True) \
                 .exclude(**is_empty).exclude(**is_null):
             if value not in EMPTY_VALUES:
-                append_if_not_exists(media, storage.path(value))
+                media.add(storage.path(value))
 
     return media
 
 
-def get_all_media(exclude=None):
+def get_all_media(exclude=None, include_models=None):
     """
         Get all media from MEDIA_ROOT
     """
@@ -45,25 +45,66 @@ def get_all_media(exclude=None):
     if not exclude:
         exclude = []
 
-    media = []
+    if not include_models:
+        include_models = []
+
+    media = set()
+
+    valid_paths = get_valid_paths(include_models)
 
     for root, dirs, files in os.walk(six.text_type(settings.MEDIA_ROOT)):
         for name in files:
             path = os.path.abspath(os.path.join(root, name))
             relpath = os.path.relpath(path, settings.MEDIA_ROOT)
-            in_exclude = False
-            for e in exclude:
-                if re.match(r'^%s$' % re.escape(e).replace('\\*', '.*'), relpath):
-                    in_exclude = True
-                    break
+            is_excluded = False
 
-            if not in_exclude:
-                append_if_not_exists(media, path)
+            if not is_path_valid(valid_paths, path):
+                is_excluded = True
+
+            if not is_excluded:
+                is_excluded = is_path_excluded(exclude, is_excluded, relpath)
+
+            if not is_excluded:
+                media.add(path)
 
     return media
 
 
-def get_unused_media(exclude=None):
+def get_valid_paths(include_models):
+    valid_paths = set()
+    media_root = settings.MEDIA_ROOT
+
+    if media_root.endswith('/'):
+        media_root = media_root[:-1]
+
+    for include_model in include_models:
+        valid_paths.add("{0}/{1}".format(media_root, include_model))
+    return valid_paths
+
+
+def is_path_valid(valid_paths, path):
+    if len(valid_paths) < 1:
+        return True  # path is always valid if the user didn't set the include models
+
+    is_valid = False
+
+    for valid_path in valid_paths:
+        if path.startswith(valid_path):
+            is_valid = True
+            break
+
+    return is_valid
+
+
+def is_path_excluded(exclude, is_excluded, relpath):
+    for e in exclude:
+        if re.match(r'^%s$' % re.escape(e).replace('\\*', '.*'), relpath):
+            is_excluded = True
+            break
+    return is_excluded
+
+
+def get_unused_media(exclude=None, include_models=None):
     """
         Get media which are not used in models
     """
@@ -71,7 +112,10 @@ def get_unused_media(exclude=None):
     if not exclude:
         exclude = []
 
-    all_media = get_all_media(exclude)
+    if not include_models:
+        include_models = []
+
+    all_media = get_all_media(exclude, include_models)
     used_media = get_used_media()
 
     return [x for x in all_media if x not in used_media]

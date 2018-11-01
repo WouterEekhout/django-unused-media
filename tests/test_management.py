@@ -110,3 +110,32 @@ class TestManagementCommand(BaseTestCase):
             .to_include(u'Done. Total files removed: 1')
 
         expect(self._media_exists(u'file.txt')).to_be_false()
+
+    def test_command_show_possible_models(self):
+        stdout = six.StringIO()
+        call_command('cleanup_unused_media', show_possible_models=True, stdout=stdout, verbosity=0)
+        expect(stdout.getvalue().split('\n')) \
+            .to_include(u'Possible models are:') \
+            .to_include(u'tests')
+
+    def test_command_include_models(self):
+        self._media_create(u'tests/include_models.txt')
+        self._media_create(u'files/include_models.txt')
+
+        stdout = six.StringIO()
+        call_command('cleanup_unused_media', include_models=['tests'], stdout=stdout,
+                     interactive=False)
+
+        expect(self._media_exists(u'tests/include_models.txt')).to_be_false()
+        expect(self._media_exists(u'files/include_models.txt')).to_be_true()
+
+    def test_command_include_models_invalid_model(self):
+        stdout = six.StringIO()
+        call_command('cleanup_unused_media', include_models=['non_existing_model'],
+                     stdout=stdout, interactive=False)
+
+        expect(stdout.getvalue().split('\n')) \
+            .to_include(u'Stopped processing. Incorrect input of the --include-models argument. '
+                        u'Fix the errors and run the task again.') \
+            .to_include(u'Possible options for --include-models are: ') \
+            .to_include(u'tests')

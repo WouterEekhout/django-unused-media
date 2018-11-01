@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand
 
 from django_unused_media.cleanup import get_unused_media
 from django_unused_media.remove import remove_empty_dirs
+from django_unused_media.utils import get_file_models, verify_user_file_models
 
 
 class Command(BaseCommand):
@@ -23,6 +24,13 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
 
+        parser.add_argument('-m', '--show-possible-models',
+                            dest='show_possible_models',
+                            action='store_true',
+                            default=None,
+                            help='Show the list of possible models for the --include-models '
+                                 'argument')
+
         parser.add_argument('--noinput', '--no-input',
                             dest='interactive',
                             action='store_false',
@@ -33,7 +41,15 @@ class Command(BaseCommand):
                             dest='exclude',
                             action='append',
                             default=[],
-                            help='Exclude files by mask (only * is supported), can use multiple --exclude')
+                            help='Exclude files by mask (only * is supported), can use multiple '
+                                 '--exclude')
+
+        parser.add_argument('-i', '--include-models',
+                            dest='include_models',
+                            action='append',
+                            default=[],
+                            help='Include only a specific list of models, can use multiple '
+                                 '--include')
 
         parser.add_argument('--remove-empty-dirs',
                             dest='remove_empty_dirs',
@@ -63,12 +79,32 @@ class Command(BaseCommand):
 
         self.info('Total files will be removed: {}'.format(len(unused_media)))
 
+    def _print_file_models(self):
+        file_models = get_file_models()
+        for file_model in file_models:
+            self.info(file_model)
+
     def handle(self, *args, **options):
 
         if 'verbosity' in options:
             self.verbosity = options['verbosity']
 
-        unused_media = get_unused_media(options.get('exclude') or [])
+        if options.get('show_possible_models'):
+            self.info("Possible models are:")
+            self._print_file_models()
+            return
+
+        if options.get('include_models'):
+            all_clear = verify_user_file_models(options.get('include_models'))
+            if not all_clear:
+                self.info("Stopped processing. Incorrect input of the --include-models argument. "
+                          "Fix the errors and run the task again.")
+                self.info("Possible options for --include-models are: ")
+                self._print_file_models()
+                return
+
+        unused_media = get_unused_media(options.get('exclude') or [], options.get(
+            'include_models') or [])
 
         if not unused_media:
             self.info('Nothing to delete. Exit')
@@ -83,8 +119,8 @@ class Command(BaseCommand):
             self._show_files_to_delete(unused_media)
 
             # ask user
-
-            question = 'Are you sure you want to remove {} unused files? (y/N)'.format(len(unused_media))
+            question = 'Are you sure you want to remove {} unused files? (y/N)'.format(len(
+                unused_media))
 
             if six.moves.input(question).upper() != 'Y':
                 self.info('Interrupted by user. Exit.')

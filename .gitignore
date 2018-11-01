@@ -65,3 +65,5 @@ docs/_build/
 # sandbox
 sandbox
 tests/media
+
+venv/
