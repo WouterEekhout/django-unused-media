@@ -2,6 +2,8 @@
 
 import shutil
 import os
+import glob
+
 from django.test import TestCase
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -54,3 +56,14 @@ class BaseTestCase(TestCase):
     @classmethod
     def _media_remove(cls, filename):
         os.remove(filename)
+
+    @classmethod
+    def _find_files(cls, pattern):
+        """
+            Return list of files matching pattern in base folder.
+        :param base:
+        :param pattern:
+        :return:
+        """
+        pattern = cls._media_abs_path(pattern)
+        return [n for n in glob.glob(pattern) if os.path.isfile(n)]

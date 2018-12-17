@@ -105,7 +105,8 @@ make flake8
 # Acknowledgements
 
 This project is a fork of [akolpakov](https://github.com/akolpakov/django-unused-media), this 
-project has an opt-in feature for cleaning up unused media files.
+project has an opt-in feature and places the files in quarantine first for cleaning up unused media 
+files.
 
 # License
 [MIT licence](./LICENSE)

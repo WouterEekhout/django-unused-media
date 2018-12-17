@@ -2,6 +2,8 @@
 
 import os
 import re
+import shutil
+import uuid
 
 import six
 from django.conf import settings
@@ -98,7 +100,7 @@ def is_path_valid(valid_paths, path):
 
 def is_path_excluded(exclude, is_excluded, relpath):
     for e in exclude:
-        if re.match(r'^%s$' % re.escape(e).replace('\\*', '.*'), relpath):
+        if re.match(r'^{0}'.format(re.escape(e).replace('\\*', '.*')), relpath):
             is_excluded = True
             break
     return is_excluded
@@ -111,6 +113,8 @@ def get_unused_media(exclude=None, include_models=None):
 
     if not exclude:
         exclude = []
+
+    exclude.append('quarantine')
 
     if not include_models:
         include_models = []
@@ -126,3 +130,43 @@ def remove_unused_media():
         Remove unused media
     """
     remove_media(get_unused_media())
+
+
+def move_media_to_quarantine(files):
+    """
+        Moves the unused files from media dir to quarantine folder in the media dir
+    :param files:
+    :return:
+    """
+    quarantine_dir = 'quarantine/'
+    ensure_dir(quarantine_dir)
+    for filename in files:
+        origin = os.path.join(settings.MEDIA_ROOT, filename)
+
+        destin = get_destination(filename, quarantine_dir)
+        #destin = os.path.join(settings.MEDIA_ROOT, quarantine_dir, filename)
+
+        ensure_dir(destin)
+        shutil.move(origin, destin)
+
+
+def get_destination(origin, quarantine_dir):
+    origin = origin.replace(settings.MEDIA_ROOT, '')
+    if origin.startswith('/'):
+        origin = origin[1:]
+
+    destin = os.path.join(settings.MEDIA_ROOT, quarantine_dir, origin)
+
+    if os.path.exists(destin):
+        extension = os.path.splitext(destin)[1]
+        destin = destin.replace(extension, '')
+        destin = "{0}_{1}{2}".format(destin, str(uuid.uuid4()), extension)
+
+    return destin
+
+
+def ensure_dir(file_path):
+    directory = os.path.dirname(file_path)
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)

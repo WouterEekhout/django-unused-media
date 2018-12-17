@@ -1,37 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-import shutil
 
 from django.conf import settings
-
-
-def move_media_to_quarantine(files):
-    """
-        Moves the unused files from media dir to quarantine folder in the media dir
-    :param files:
-    :return:
-    """
-    quarantine_dir = 'quarantine/'
-    ensure_dir(quarantine_dir)
-    for filename in files:
-        origin = os.path.join(settings.MEDIA_ROOT, filename)
-
-        filename = filename.replace(settings.MEDIA_ROOT, '')
-        if filename.startswith('/'):
-            filename = filename[1:]
-
-        destin = os.path.join(settings.MEDIA_ROOT, quarantine_dir, filename)
-
-        ensure_dir(destin)
-        shutil.move(origin, destin)
-
-
-def ensure_dir(file_path):
-    directory = os.path.dirname(file_path)
-
-    if not os.path.exists(directory):
-        os.makedirs(directory)
 
 
 def remove_media(files):

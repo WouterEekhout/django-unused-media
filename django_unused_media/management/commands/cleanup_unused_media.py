@@ -4,8 +4,8 @@ import six.moves
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from django_unused_media.cleanup import get_unused_media
-from django_unused_media.remove import remove_empty_dirs, move_media_to_quarantine
+from django_unused_media.cleanup import get_unused_media, move_media_to_quarantine
+from django_unused_media.remove import remove_empty_dirs
 from django_unused_media.utils import get_file_models, verify_user_file_models
 
 
@@ -127,7 +127,7 @@ class Command(BaseCommand):
         self.debug('Moving files to quarantine')
         move_media_to_quarantine(unused_media)
         for f in unused_media:
-            self.debug('Placed {} to quarantine'.format(f))
+            self.debug('Placed %s to quarantine' % f)
 
         if options.get('remove_empty_dirs'):
             remove_empty_dirs()
