@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import os
-
 import six.moves
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from django_unused_media.cleanup import get_unused_media
-from django_unused_media.remove import remove_empty_dirs
+from django_unused_media.remove import remove_empty_dirs, move_media_to_quarantine
 from django_unused_media.utils import get_file_models, verify_user_file_models
 
 
@@ -72,12 +70,12 @@ class Command(BaseCommand):
             self.stdout.write(message)
 
     def _show_files_to_delete(self, unused_media):
-        self.debug('Files to remove:')
+        self.debug('Files to place in quarantine:')
 
         for f in unused_media:
             self.debug(f)
 
-        self.info('Total files will be removed: {}'.format(len(unused_media)))
+        self.info('Total files will be placed in quarantine: {}'.format(len(unused_media)))
 
     def _print_file_models(self):
         file_models = get_file_models()
@@ -107,7 +105,7 @@ class Command(BaseCommand):
             'include_models') or [])
 
         if not unused_media:
-            self.info('Nothing to delete. Exit')
+            self.info('Nothing to do. Exit')
             return
 
         if options.get('dry_run'):
@@ -119,18 +117,19 @@ class Command(BaseCommand):
             self._show_files_to_delete(unused_media)
 
             # ask user
-            question = 'Are you sure you want to remove {} unused files? (y/N)'.format(len(
+            question = 'Are you sure you want to place {} unused files in quarantine? (y/N)'.format(len(
                 unused_media))
 
             if six.moves.input(question).upper() != 'Y':
                 self.info('Interrupted by user. Exit.')
                 return
 
+        self.debug('Moving files to quarantine')
+        move_media_to_quarantine(unused_media)
         for f in unused_media:
-            self.debug('Remove %s' % f)
-            os.remove(os.path.join(settings.MEDIA_ROOT, f))
+            self.debug('Placed {} to quarantine'.format(f))
 
         if options.get('remove_empty_dirs'):
             remove_empty_dirs()
 
-        self.info('Done. Total files removed: {}'.format(len(unused_media)))
+        self.info('Done. Total files placed in quarantine: {}'.format(len(unused_media)))

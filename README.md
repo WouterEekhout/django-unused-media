@@ -3,7 +3,7 @@
 This package provides management command `cleanup_unused_media` for Django applications. With 
 help of this management command you can remove all media files which are no longer used (files 
 without references from any Django model with `FileField` or `ImageField` fields or their 
-inheritances).
+inheritances). The files will be placed in the quarantine folder before it is removed. 
 
 # Installation
 
@@ -29,7 +29,8 @@ To cleanup all unused media files, run management command:
 ```
 ./manage.py cleanup_unused_media
 ```
-By default command is running in interactive mode. List of files which are going to be removed will be displayed for confirmation. User have to confirm the action.
+By default command is running in interactive mode. List of files which are going to be placed in 
+quarantine will be displayed for confirmation. User have to confirm the action.
 
 ### Options
 
