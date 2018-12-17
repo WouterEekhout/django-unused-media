@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import uuid
+import datetime
 
 import six
 from django.conf import settings
@@ -11,6 +12,9 @@ from django.core.validators import EMPTY_VALUES
 
 from .remove import remove_media
 from .utils import get_file_fields
+
+QUARANTINE_DIR = 'quarantine/'
+DATETIME_FORMAT = '%Y-%m-%d_%H:%M'
 
 
 def get_used_media():
@@ -138,24 +142,27 @@ def move_media_to_quarantine(files):
     :param files:
     :return:
     """
-    quarantine_dir = 'quarantine/'
-    ensure_dir(quarantine_dir)
+    ensure_dir(QUARANTINE_DIR)
+
+    now = datetime.datetime.now()
+    now_str = now.strftime('%Y-%m-%d_%H:%M')
+
     for filename in files:
         origin = os.path.join(settings.MEDIA_ROOT, filename)
 
-        destin = get_destination(filename, quarantine_dir)
+        destin = get_destination(filename, now_str)
         #destin = os.path.join(settings.MEDIA_ROOT, quarantine_dir, filename)
 
         ensure_dir(destin)
         shutil.move(origin, destin)
 
 
-def get_destination(origin, quarantine_dir):
+def get_destination(origin, now_str):
     origin = origin.replace(settings.MEDIA_ROOT, '')
     if origin.startswith('/'):
         origin = origin[1:]
 
-    destin = os.path.join(settings.MEDIA_ROOT, quarantine_dir, origin)
+    destin = os.path.join(settings.MEDIA_ROOT, QUARANTINE_DIR, now_str, origin)
 
     if os.path.exists(destin):
         extension = os.path.splitext(destin)[1]
@@ -170,3 +177,22 @@ def ensure_dir(file_path):
 
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+
+def clean_quarantine():
+    # '%Y-%m-%d_%H:%M'
+    now = datetime.datetime.now()
+
+    listdirs = os.listdir(os.path.join(settings.MEDIA_ROOT, QUARANTINE_DIR))
+    for name in listdirs:
+        name_path = os.path.join(settings.MEDIA_ROOT, QUARANTINE_DIR, name)
+        if os.path.isdir(name_path):
+
+            try:
+                dir_date = datetime.datetime.strptime(name, DATETIME_FORMAT)
+            except ValueError:
+                continue
+
+            if dir_date < (now - datetime.timedelta(days=90)):
+                print("Remove {0}".format(name))
+                shutil.rmtree(name_path, ignore_errors=True)

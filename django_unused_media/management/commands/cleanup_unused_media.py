@@ -4,7 +4,8 @@ import six.moves
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from django_unused_media.cleanup import get_unused_media, move_media_to_quarantine
+from django_unused_media.cleanup import get_unused_media, move_media_to_quarantine, \
+    clean_quarantine
 from django_unused_media.remove import remove_empty_dirs
 from django_unused_media.utils import get_file_models, verify_user_file_models
 
@@ -61,6 +62,12 @@ class Command(BaseCommand):
                             default=False,
                             help='Dry run without any affect on your data')
 
+        parser.add_argument('-c', '--cleanup_quarantine',
+                            dest='cleanup_quarantine',
+                            action='store_true',
+                            default=None,
+                            help='Remove files in the quarantine older than 3 months')
+
     def info(self, message):
         if self.verbosity >= 0:
             self.stdout.write(message)
@@ -86,6 +93,11 @@ class Command(BaseCommand):
 
         if 'verbosity' in options:
             self.verbosity = options['verbosity']
+
+        if options.get('cleanup_quarantine'):
+            self.info('Cleaning up quarantine')
+            clean_quarantine()
+            return
 
         if options.get('show_possible_models'):
             self.info("Possible models are:")

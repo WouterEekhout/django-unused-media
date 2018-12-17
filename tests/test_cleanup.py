@@ -2,12 +2,13 @@
 
 import six
 import mock
+import datetime
 
 from preggy import expect
 from django.db import models
 
 from django_unused_media.cleanup import get_file_fields, get_all_media, get_used_media, \
-    get_unused_media, remove_unused_media, move_media_to_quarantine
+    get_unused_media, remove_unused_media, move_media_to_quarantine, clean_quarantine
 from django_unused_media.utils import get_file_models, verify_user_file_models
 from django_unused_media.remove import remove_media, remove_empty_dirs
 from .base import BaseTestCase
@@ -228,7 +229,11 @@ class TestCleanup(BaseTestCase):
         expect(get_unused_media()).Not.to_be_empty()
         move_media_to_quarantine(get_unused_media())
         expect(get_unused_media()).to_be_empty()
-        expect(self._media_exists(u'quarantine/some_folder/notused.txt')).to_be_true()
+
+        now = datetime.datetime.now()
+        now_str = now.strftime('%Y-%m-%d_%H:%M')
+        path = u'quarantine/{0}/some_folder/notused.txt'.format(now_str)
+        expect(self._media_exists(path)).to_be_true()
 
     def test_quarantine_file_already_exists(self):
         self._media_create(u'some_folder/notused.txt')
@@ -236,6 +241,24 @@ class TestCleanup(BaseTestCase):
         expect(get_unused_media()).to_be_empty()
         self._media_create(u'some_folder/notused.txt')
         move_media_to_quarantine(get_unused_media())
-        expect(self._find_files(u'quarantine/some_folder/notused*.txt'))\
+
+        now = datetime.datetime.now()
+        now_str = now.strftime('%Y-%m-%d_%H:%M')
+        path = u'quarantine/{0}/some_folder/notused*.txt'.format(now_str)
+        expect(self._find_files(path))\
             .to_be_instance_of(list).to_length(2)
 
+    def test_quarantine_remove_old_folder(self):
+        old_date = datetime.datetime.now() - datetime.timedelta(days=100)
+        old_date_str = old_date.strftime('%Y-%m-%d_%H:%M')
+        path = u'quarantine/{0}/some_folder/notused.txt'.format(old_date_str)
+        self._media_create(path)
+        clean_quarantine()
+        expect(self._media_exists(path)).to_be_false()
+
+        old_date = datetime.datetime.now() - datetime.timedelta(days=10)
+        old_date_str = old_date.strftime('%Y-%m-%d_%H:%M')
+        path = u'quarantine/{0}/some_folder/notused2.txt'.format(old_date_str)
+        self._media_create(path)
+        clean_quarantine()
+        expect(self._media_exists(path)).to_be_true()
