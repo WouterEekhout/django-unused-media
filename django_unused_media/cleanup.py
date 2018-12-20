@@ -183,7 +183,12 @@ def clean_quarantine():
     # '%Y-%m-%d_%H:%M'
     now = datetime.datetime.now()
 
-    listdirs = os.listdir(os.path.join(settings.MEDIA_ROOT, QUARANTINE_DIR))
+    listdirs = []
+    try:
+        listdirs = os.listdir(os.path.join(settings.MEDIA_ROOT, QUARANTINE_DIR))
+    except OSError:
+        pass
+
     for name in listdirs:
         name_path = os.path.join(settings.MEDIA_ROOT, QUARANTINE_DIR, name)
         if os.path.isdir(name_path):
