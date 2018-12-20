@@ -62,7 +62,7 @@ class Command(BaseCommand):
                             default=False,
                             help='Dry run without any affect on your data')
 
-        parser.add_argument('-c', '--cleanup_quarantine',
+        parser.add_argument('-c', '--cleanup-quarantine',
                             dest='cleanup_quarantine',
                             action='store_true',
                             default=None,
