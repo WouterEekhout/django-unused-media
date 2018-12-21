@@ -105,6 +105,10 @@ To run static analyser:
 make flake8
 ```
 
+# Code
+
+The code can be found on [Github](https://github.com/WouterEekhout/django-unused-media).
+
 # Acknowledgements
 
 This project is a fork of [akolpakov](https://github.com/akolpakov/django-unused-media), this 
