@@ -85,9 +85,9 @@ Dry run without any affect on your data
 
 Verbosity level. 0 - minimal output, 1 - normal output (default)
 
-#### `-c`, `---cleanup_quarantine`
+#### `-c`, `---cleanup-quarantine`
 
-Removes files that have been 90 days or longer in quarantine.
+Removes files that have been 90 days or longer in quarantine. It doesn't execute anything else.
 
 # Tests
 At first make sure that you are in virtualenv.
