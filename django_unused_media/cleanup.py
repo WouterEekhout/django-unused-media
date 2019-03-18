@@ -182,6 +182,8 @@ def ensure_dir(file_path):
 def clean_quarantine():
     # '%Y-%m-%d_%H:%M'
     now = datetime.datetime.now()
+    print(now)
+    print("90 days ago is: {}".format((now - datetime.timedelta(days=90))))
 
     listdirs = []
     try:
@@ -192,12 +194,22 @@ def clean_quarantine():
     for name in listdirs:
         name_path = os.path.join(settings.MEDIA_ROOT, QUARANTINE_DIR, name)
         if os.path.isdir(name_path):
+            print("Checking {0} in path: {1}".format(name, name_path))
 
             try:
                 dir_date = datetime.datetime.strptime(name, DATETIME_FORMAT)
             except ValueError:
+                print("ERROR: Failed to parse folder {0} in {1} format".format(name,
+                                                                               DATETIME_FORMAT))
                 continue
 
             if dir_date < (now - datetime.timedelta(days=90)):
-                print("Remove {0}".format(name))
-                shutil.rmtree(name_path, ignore_errors=True)
+                try:
+                    shutil.rmtree(name_path)
+                    print("Removed {0}".format(name))
+                except:
+                    print("ERROR: Failed to remove folder {0}".format(name))
+                    continue
+            else:
+                print("Folder is not ready to be removed")
+                print("")

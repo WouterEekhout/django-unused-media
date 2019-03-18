@@ -249,16 +249,18 @@ class TestCleanup(BaseTestCase):
             .to_be_instance_of(list).to_length(2)
 
     def test_quarantine_remove_old_folder(self):
-        old_date = datetime.datetime.now() - datetime.timedelta(days=100)
+        old_date = datetime.datetime.now() - datetime.timedelta(days=120)
         old_date_str = old_date.strftime('%Y-%m-%d_%H:%M')
         path = u'quarantine/{0}/some_folder/notused.txt'.format(old_date_str)
         self._media_create(path)
         clean_quarantine()
         expect(self._media_exists(path)).to_be_false()
 
+    def test_quarantine_keep_recent_folder(self):
         old_date = datetime.datetime.now() - datetime.timedelta(days=10)
         old_date_str = old_date.strftime('%Y-%m-%d_%H:%M')
         path = u'quarantine/{0}/some_folder/notused2.txt'.format(old_date_str)
         self._media_create(path)
         clean_quarantine()
-        expect(self._media_exists(path)).to_be_true()
+        exists = self._media_exists(path)
+        expect(exists).to_be_true()
